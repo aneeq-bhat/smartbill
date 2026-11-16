@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Invoice #{{ invoice.inv_no }}{% endblock %}
+{% block content %}
+<div class="page-head no-print">
+  <h1 class="page-title">Invoice #{{ invoice.inv_no }}</h1>
+  <div class="d-flex flex-wrap gap-2">
+    <button class="btn btn-sb" type="button" data-print><i class="bi bi-printer"></i> Print</button>
+    <a class="btn btn-outline-sb" href="{{ url_for('download_invoice_pdf', inv_no=invoice.inv_no) }}"><i class="bi bi-filetype-pdf"></i> PDF</a>
+    <a class="btn btn-outline-sb" href="{{ url_for('download_invoice_txt', inv_no=invoice.inv_no) }}"><i class="bi bi-filetype-txt"></i> TXT</a>
+    <a class="btn btn-light" href="{{ url_for('invoices') }}">All invoices</a>
+  </div>
+</div>
+
+<article class="invoice-sheet">
+  <header class="inv-head">
+    <div>
+      <h2 class="inv-shop">{{ shop.name }}</h2>
+      {% if shop.address %}<div>{{ shop.address }}</div>{% endif %}
+      {% if shop.phone %}<div>Phone: {{ shop.phone }}</div>{% endif %}
+      {% if shop.gstin %}<div>GSTIN: {{ shop.gstin }}</div>{% endif %}
+    </div>
+    <div class="inv-title">
+      <div class="inv-label">TAX INVOICE</div>
+      <div><span class="text-muted">Invoice No:</span> <strong>{{ invoice.inv_no }}</strong></div>
+      <div><span class="text-muted">Date:</span> <strong>{{ invoice.inv_date.strftime('%d %b %Y') }}</strong></div>
+    </div>
+  </header>
+
+  <section class="inv-bill">
+    <div class="text-muted small text-uppercase">Bill to</div>
+    <div class="fw-semibold">{{ invoice.customer_name }}</div>
+    {% if invoice.phone %}<div>Phone: {{ invoice.phone }}</div>{% endif %}
+    {% if invoice.gstin %}<div>GSTIN: {{ invoice.gstin }}</div>{% endif %}
+  </section>
+
+  <div class="table-responsive">
+    <table class="table inv-table align-middle">
+      <thead>
+        <tr><th>#</th><th>Item</th><th class="text-end">Qty</th><th class="text-end">Rate</th><th class="text-end">GST %</th><th class="text-end">Taxable</th><th class="text-end">GST</th></tr>
+      </thead>
+      <tbody>
+      {% for it in items %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td>{{ it.name }}</td>
+          <td class="text-end">{{ it.qty }}</td>
+          <td class="text-end">{{ it.rate|amt }}</td>
+          <td class="text-end">{{ it.gst_rate }}%</td>
+          <td class="text-end">{{ it.taxable|amt }}</td>
+          <td class="text-end">{{ it.gst_amt|amt }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="inv-totals">
+    <div><span>Sub-total (taxable)</span><span>{{ invoice.subtotal|inr }}</span></div>
+    <div><span>CGST</span><span>{{ cgst|inr }}</span></div>
+    <div><span>SGST</span><span>{{ sgst|inr }}</span></div>
+    <div class="grand"><span>Grand total</span><span>{{ invoice.grand_total|inr }}</span></div>
+  </div>
+
+  <footer class="inv-foot">
+    Computer-generated invoice. CGST and SGST are charged because the sale is within the same State / UT.
+  </footer>
+</article>
+{% endblock %}

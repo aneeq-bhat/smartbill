@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}New invoice{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1 class="page-title">New invoice</h1>
+  <a class="btn btn-outline-sb" href="{{ url_for('invoices') }}">Previous invoices</a>
+</div>
+
+<noscript><div class="alert alert-warning">The billing screen needs JavaScript to add products to the bill.</div></noscript>
+
+<form id="bill-form" method="post" action="{{ url_for('billing') }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="row g-3">
+
+    <div class="col-lg-7">
+      <div class="card">
+        <div class="card-header">Products</div>
+        <div class="card-body">
+          <input class="form-control mb-3" id="product-search" type="search" placeholder="Search products by name or category" autocomplete="off" aria-label="Search products">
+          <div id="product-grid" class="product-grid"></div>
+          <p id="no-products" class="text-muted mb-0 d-none">
+            No products match. <a href="{{ url_for('add_product') }}">Add a product</a>
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-5" id="cart">
+      <div class="card cart-card">
+        <div class="card-header">Current bill</div>
+        <div class="card-body">
+          <label class="form-label" for="cid">Customer</label>
+          <div class="input-group mb-3">
+            <select class="form-select" id="cid" name="cid">
+              {% for c in customers %}
+              <option value="{{ c.cid }}" {% if c.cid == selected_cid %}selected{% endif %}>{{ c.name }}{% if c.phone %} ({{ c.phone }}){% endif %}</option>
+              {% endfor %}
+            </select>
+            <a class="btn btn-outline-sb" href="{{ url_for('customers') }}" title="Add customer"><i class="bi bi-person-plus"></i></a>
+          </div>
+
+          <div id="cart-lines"></div>
+          <p id="cart-empty" class="text-muted text-center py-4 mb-0">Tap a product to add it to the bill.</p>
+
+          <div class="totals-box mt-3">
+            <div><span>Taxable value</span><span id="t-taxable">&#8377;0.00</span></div>
+            <div><span>CGST</span><span id="t-cgst">&#8377;0.00</span></div>
+            <div><span>SGST</span><span id="t-sgst">&#8377;0.00</span></div>
+            <div class="grand"><span>Grand total</span><span id="t-grand">&#8377;0.00</span></div>
+          </div>
+          <p class="small text-muted mt-2 mb-3">Final prices, GST and stock are checked again by the server when you save.</p>
+          <button class="btn btn-sb btn-lg w-100" id="save-bill" type="submit" disabled>
+            <i class="bi bi-check2-circle"></i> Save invoice
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</form>
+
+<a href="#cart" id="mobile-bar" class="mobile-bar d-lg-none d-none no-print">
+  <span id="mb-count">0 items</span>
+  <strong id="mb-total">&#8377;0.00</strong>
+  <span>View bill <i class="bi bi-chevron-down"></i></span>
+</a>
+
+<script id="products-data" type="application/json">{{ client_products|tojson }}</script>
+<script id="prefill-data" type="application/json">{{ prefill|tojson }}</script>
+{% endblock %}

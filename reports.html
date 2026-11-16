@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+{% block title %}Reports{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1 class="page-title">GST &amp; Sales Reports</h1>
+  <a class="btn btn-outline-sb" href="{{ url_for('export_csv', **{'from': start.isoformat(), 'to': end.isoformat()}) }}">
+    <i class="bi bi-filetype-csv"></i> Export sales register (CSV)
+  </a>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <form class="row g-2 align-items-end" method="get" action="{{ url_for('reports') }}">
+      <div class="col-6 col-md-3">
+        <label class="form-label small mb-1" for="from">From</label>
+        <input class="form-control" id="from" name="from" type="date" value="{{ start.isoformat() }}" required>
+      </div>
+      <div class="col-6 col-md-3">
+        <label class="form-label small mb-1" for="to">To</label>
+        <input class="form-control" id="to" name="to" type="date" value="{{ end.isoformat() }}" required>
+      </div>
+      <div class="col-12 col-md-2 d-grid">
+        <button class="btn btn-sb" type="submit">Show report</button>
+      </div>
+      <div class="col-12 col-md-4 d-flex flex-wrap gap-1 justify-content-md-end">
+        {% for label, s, e in presets %}
+        <a class="btn btn-sm btn-light border" href="{{ url_for('reports', **{'from': s.isoformat(), 'to': e.isoformat()}) }}">{{ label }}</a>
+        {% endfor %}
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-6 col-lg-3"><div class="mini-stat"><span>Total revenue</span><strong>{{ totals.revenue|inr }}</strong></div></div>
+  <div class="col-6 col-lg-3"><div class="mini-stat"><span>Taxable value</span><strong>{{ totals.taxable|inr }}</strong></div></div>
+  <div class="col-6 col-lg-3"><div class="mini-stat"><span>Total GST</span><strong>{{ totals.gst|inr }}</strong></div></div>
+  <div class="col-6 col-lg-3"><div class="mini-stat"><span>Invoices / average</span><strong>{{ totals.invoices }} / {{ totals.average|inr }}</strong></div></div>
+</div>
+
+<ul class="nav nav-pills report-tabs mb-3" id="reportTabs" role="tablist">
+  <li class="nav-item" role="presentation"><button class="nav-link active" data-bs-toggle="pill" data-bs-target="#tab-gst" type="button" role="tab">GST summary</button></li>
+  <li class="nav-item" role="presentation"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#tab-daily" type="button" role="tab">Date-wise</button></li>
+  <li class="nav-item" role="presentation"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#tab-monthly" type="button" role="tab">Monthly</button></li>
+  <li class="nav-item" role="presentation"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#tab-top" type="button" role="tab">Top products</button></li>
+  <li class="nav-item" role="presentation"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#tab-register" type="button" role="tab">Sales register</button></li>
+</ul>
+
+<div class="tab-content">
+
+  <div class="tab-pane fade show active" id="tab-gst" role="tabpanel">
+    <div class="card">
+      <div class="card-header">Rate-wise GST summary (for GSTR-1 / GSTR-3B), {{ start.strftime('%d %b %Y') }} to {{ end.strftime('%d %b %Y') }}</div>
+      <div class="card-body p-0">
+        {% if gst_rows %}
+        <table class="table align-middle mb-0 stack-table">
+          <thead><tr><th>GST rate</th><th class="text-end">Invoices</th><th class="text-end">Units</th><th class="text-end">Taxable</th><th class="text-end">CGST</th><th class="text-end">SGST</th><th class="text-end">Total GST</th></tr></thead>
+          <tbody>
+          {% for r in gst_rows %}
+            <tr>
+              <td data-label="GST rate" class="fw-semibold">{{ r.gst_rate }}%</td>
+              <td data-label="Invoices" class="text-end">{{ r.invoices }}</td>
+              <td data-label="Units" class="text-end">{{ r.units }}</td>
+              <td data-label="Taxable" class="text-end">{{ r.taxable|amt }}</td>
+              <td data-label="CGST" class="text-end">{{ r.cgst|amt }}</td>
+              <td data-label="SGST" class="text-end">{{ r.sgst|amt }}</td>
+              <td data-label="Total GST" class="text-end">{{ r.gst|amt }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+          <tfoot>
+            <tr class="table-light fw-bold">
+              <td data-label="">TOTAL</td><td data-label=""></td><td data-label=""></td>
+              <td data-label="Taxable" class="text-end">{{ gst_total.taxable|amt }}</td>
+              <td data-label="CGST" class="text-end">{{ gst_total.cgst|amt }}</td>
+              <td data-label="SGST" class="text-end">{{ gst_total.sgst|amt }}</td>
+              <td data-label="Total GST" class="text-end">{{ gst_total.gst|amt }}</td>
+            </tr>
+          </tfoot>
+        </table>
+        {% else %}<p class="text-muted p-3 mb-0">No sales in this period.</p>{% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-pane fade" id="tab-daily" role="tabpanel">
+    <div class="card">
+      <div class="card-header">Daily sales and GST</div>
+      <div class="card-body p-0">
+        {% if daily %}
+        <table class="table align-middle mb-0 stack-table">
+          <thead><tr><th>Date</th><th class="text-end">Invoices</th><th class="text-end">Taxable</th><th class="text-end">CGST</th><th class="text-end">SGST</th><th class="text-end">Total sales</th></tr></thead>
+          <tbody>
+          {% for r in daily %}
+            <tr>
+              <td data-label="Date">{{ r.inv_date.strftime('%d %b %Y') }}</td>
+              <td data-label="Invoices" class="text-end">{{ r.invoices }}</td>
+              <td data-label="Taxable" class="text-end">{{ r.taxable|amt }}</td>
+              <td data-label="CGST" class="text-end">{{ r.cgst|amt }}</td>
+              <td data-label="SGST" class="text-end">{{ r.sgst|amt }}</td>
+              <td data-label="Total sales" class="text-end fw-semibold">{{ r.total|amt }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+        {% else %}<p class="text-muted p-3 mb-0">No sales in this period.</p>{% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-pane fade" id="tab-monthly" role="tabpanel">
+    <div class="card">
+      <div class="card-header">Monthly sales</div>
+      <div class="card-body p-0">
+        {% if monthly %}
+        <table class="table align-middle mb-0 stack-table">
+          <thead><tr><th>Month</th><th class="text-end">Invoices</th><th class="text-end">Total sales</th><th class="text-end">Average invoice</th></tr></thead>
+          <tbody>
+          {% for r in monthly %}
+            <tr>
+              <td data-label="Month">{{ r.mon|month_name }} {{ r.yr }}</td>
+              <td data-label="Invoices" class="text-end">{{ r.invoices }}</td>
+              <td data-label="Total sales" class="text-end fw-semibold">{{ r.total|amt }}</td>
+              <td data-label="Average invoice" class="text-end">{{ r.average|amt }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+        {% else %}<p class="text-muted p-3 mb-0">No sales in this period.</p>{% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-pane fade" id="tab-top" role="tabpanel">
+    <div class="card">
+      <div class="card-header">Best-selling products (top 10 by units)</div>
+      <div class="card-body p-0">
+        {% if top_products %}
+        <table class="table align-middle mb-0 stack-table">
+          <thead><tr><th>Product</th><th class="text-end">Units sold</th><th class="text-end">Taxable value</th></tr></thead>
+          <tbody>
+          {% for r in top_products %}
+            <tr>
+              <td data-label="Product">{{ r.name }}</td>
+              <td data-label="Units sold" class="text-end">{{ r.units }}</td>
+              <td data-label="Taxable value" class="text-end">{{ r.taxable|amt }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+        {% else %}<p class="text-muted p-3 mb-0">No sales in this period.</p>{% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-pane fade" id="tab-register" role="tabpanel">
+    <div class="card">
+      <div class="card-header">Sales register</div>
+      <div class="card-body p-0">
+        {% if register %}
+        <table class="table align-middle mb-0 stack-table">
+          <thead><tr><th>Invoice</th><th>Date</th><th>Customer</th><th class="text-end">Taxable</th><th class="text-end">CGST</th><th class="text-end">SGST</th><th class="text-end">Total</th></tr></thead>
+          <tbody>
+          {% for r in register %}
+            <tr>
+              <td data-label="Invoice"><a href="{{ url_for('view_invoice', inv_no=r.inv_no) }}">#{{ r.inv_no }}</a></td>
+              <td data-label="Date">{{ r.inv_date.strftime('%d %b %Y') }}</td>
+              <td data-label="Customer">{{ r.customer_name }}</td>
+              <td data-label="Taxable" class="text-end">{{ r.subtotal|amt }}</td>
+              <td data-label="CGST" class="text-end">{{ r.cgst|amt }}</td>
+              <td data-label="SGST" class="text-end">{{ r.sgst|amt }}</td>
+              <td data-label="Total" class="text-end fw-semibold">{{ r.grand_total|amt }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+        {% else %}<p class="text-muted p-3 mb-0">No sales in this period.</p>{% endif %}
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

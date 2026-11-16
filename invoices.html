@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Invoices{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1 class="page-title">Invoices</h1>
+  <a class="btn btn-sb" href="{{ url_for('billing') }}"><i class="bi bi-plus-lg"></i> New invoice</a>
+</div>
+
+<form class="row g-2 mb-3" method="get" action="{{ url_for('invoices') }}">
+  <div class="col-12 col-md-5">
+    <input class="form-control" type="search" name="q" value="{{ q }}" maxlength="50" placeholder="Invoice number or customer name">
+  </div>
+  <div class="col-6 col-md-2">
+    <input class="form-control" type="date" name="from" value="{{ start.isoformat() if start else '' }}" aria-label="From date">
+  </div>
+  <div class="col-6 col-md-2">
+    <input class="form-control" type="date" name="to" value="{{ end.isoformat() if end else '' }}" aria-label="To date">
+  </div>
+  <div class="col-12 col-md-3 d-grid">
+    <button class="btn btn-outline-sb" type="submit">Search</button>
+  </div>
+</form>
+
+<div class="card">
+  <div class="card-body p-0">
+    {% if invoices %}
+    <table class="table align-middle mb-0 stack-table">
+      <thead><tr><th>Invoice</th><th>Date</th><th>Customer</th><th class="text-end">Taxable</th><th class="text-end">GST</th><th class="text-end">Total</th><th></th></tr></thead>
+      <tbody>
+      {% for r in invoices %}
+        <tr>
+          <td data-label="Invoice" class="fw-semibold">#{{ r.inv_no }}</td>
+          <td data-label="Date">{{ r.inv_date.strftime('%d %b %Y') }}</td>
+          <td data-label="Customer">{{ r.customer_name }}</td>
+          <td data-label="Taxable" class="text-end">{{ r.subtotal|inr }}</td>
+          <td data-label="GST" class="text-end">{{ r.total_gst|inr }}</td>
+          <td data-label="Total" class="text-end fw-semibold">{{ r.grand_total|inr }}</td>
+          <td class="text-end actions"><a class="btn btn-sm btn-outline-sb" href="{{ url_for('view_invoice', inv_no=r.inv_no) }}">View</a></td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% if invoices|length == 200 %}<p class="small text-muted p-3 mb-0">Showing the latest 200 invoices. Use the search to narrow down.</p>{% endif %}
+    {% else %}
+    <p class="text-muted p-3 mb-0">No invoices found.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

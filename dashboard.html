@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1 class="page-title">Dashboard</h1>
+    <p class="text-muted mb-0">{{ shop.name }}{% if shop.address %}, {{ shop.address }}{% endif %}</p>
+  </div>
+  <a class="btn btn-sb" href="{{ url_for('billing') }}"><i class="bi bi-plus-lg"></i> New invoice</a>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-6 col-xl-3">
+    <div class="stat-card">
+      <div class="stat-icon"><i class="bi bi-currency-rupee"></i></div>
+      <div class="stat-label">Total sales</div>
+      <div class="stat-value">{{ totals.sales|inr }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="stat-card">
+      <div class="stat-icon"><i class="bi bi-box-seam"></i></div>
+      <div class="stat-label">Total products</div>
+      <div class="stat-value">{{ product_count }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="stat-card">
+      <div class="stat-icon"><i class="bi bi-receipt"></i></div>
+      <div class="stat-label">Total invoices</div>
+      <div class="stat-value">{{ totals.invoices }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <a class="stat-card stat-link {% if low_total %}stat-warn{% endif %}" href="{{ url_for('inventory', low='1') }}">
+      <div class="stat-icon"><i class="bi bi-exclamation-triangle"></i></div>
+      <div class="stat-label">Low-stock products</div>
+      <div class="stat-value">{{ low_total }}</div>
+    </a>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-6">
+    <div class="mini-stat"><span>Today's sales</span><strong>{{ today_sales|inr }}</strong></div>
+  </div>
+  <div class="col-6">
+    <div class="mini-stat"><span>Average invoice</span><strong>{{ totals.average|inr }}</strong></div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-8">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Recent transactions</span>
+        <a class="small" href="{{ url_for('invoices') }}">View all</a>
+      </div>
+      <div class="card-body p-0">
+        {% if recent %}
+        <table class="table table-sm align-middle mb-0 stack-table">
+          <thead><tr><th>Invoice</th><th>Date</th><th>Customer</th><th class="text-end">Total</th></tr></thead>
+          <tbody>
+          {% for r in recent %}
+            <tr>
+              <td data-label="Invoice"><a href="{{ url_for('view_invoice', inv_no=r.inv_no) }}">#{{ r.inv_no }}</a></td>
+              <td data-label="Date">{{ r.inv_date.strftime('%d %b %Y') }}</td>
+              <td data-label="Customer">{{ r.customer_name }}</td>
+              <td data-label="Total" class="text-end">{{ r.grand_total|inr }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted p-3 mb-0">No invoices yet. Create your first invoice from the Billing page.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card h-100">
+      <div class="card-header">Low stock (below {{ low_limit }})</div>
+      <ul class="list-group list-group-flush">
+        {% for p in low_items %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <span class="text-truncate me-2">{{ p.name }}</span>
+          <span class="badge {% if p.stock == 0 %}text-bg-danger{% else %}text-bg-warning{% endif %}">{{ p.stock }} left</span>
+        </li>
+        {% else %}
+        <li class="list-group-item text-muted">All products are sufficiently stocked.</li>
+        {% endfor %}
+      </ul>
+      {% if low_total > low_items|length %}
+      <div class="card-footer small"><a href="{{ url_for('inventory', low='1') }}">See all {{ low_total }} low-stock products</a></div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

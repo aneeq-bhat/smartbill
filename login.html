@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Log in{% endblock %}
+{% block content %}
+<div class="login-wrap">
+  <div class="card login-card shadow-sm">
+    <div class="card-body p-4">
+      <div class="text-center mb-4">
+        <span class="sb-logo sb-logo-lg">SB</span>
+        <h1 class="h4 mt-3 mb-1">SmartBill</h1>
+        <p class="text-muted small mb-0">GST Billing &amp; Inventory Management</p>
+      </div>
+      <form method="post" action="{{ url_for('login') }}" autocomplete="on">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="mb-3">
+          <label class="form-label" for="username">Username</label>
+          <input class="form-control" id="username" name="username" required autofocus autocomplete="username" maxlength="60">
+        </div>
+        <div class="mb-4">
+          <label class="form-label" for="password">Password</label>
+          <input class="form-control" id="password" name="password" type="password" required autocomplete="current-password" maxlength="200">
+        </div>
+        <button class="btn btn-sb w-100" type="submit">Log in</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
